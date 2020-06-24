@@ -1,19 +1,12 @@
 Prerequisites
 =============
 
-Custom version of NS-3 and specified version of ndnSIM need to be installed (see instructions below).
-
-- NS-3-dev commit hash: cc8cccf59ddd47d047ea6c4500590b1c8e2b1fb1
-- NDNSim commit hash: 387843039ad34f2350d00ba63aa1c061502a6913
-
 The code should also work with the latest version of ndnSIM, but it is not guaranteed.
 
-The visualiser is extremely unstable. Here are some issues I faced:
+The visualiser is extremely unstable. Here are some issues I faced with possible solutions if encountered:
 
 - Try using `from __future__ import print_function` where you get compilation issues due to the incorrect print function being used.
 - The above version of ns-3-dev seems to have an infinite [loop issue in the visualizer](https://github.com/named-data-ndnSIM/ndnSIM/issues/93). Outputting an error like such: `RuntimeError: maximum recursion depth exceeded while calling a Python object`. Quick fix is to change `from . import core` to `import core` in ns-3/src/visualizer/visualizer/hud.py
-
-Follow the steps detailed [here](https://ndnsim.net/current/getting-started.html) to get set up correctly
 
 All steps detailed below are for setup with macOS
 ```
@@ -28,9 +21,8 @@ All steps detailed below are for setup with macOS
     mkdir ndnSIM
     cd ndnSIM
 
-    git clone https://github.com/named-data-ndnSIM/ns-3-dev.git ns-3
+    git clone --recurse-submodules https://github.com/ChrisLynch96/ns-3.git
     git clone https://github.com/named-data-ndnSIM/pybindgen.git pybindgen
-    git clone --recursive https://github.com/named-data-ndnSIM/ndnSIM ns-3/src/ndnSIM
 
     # Build and install NS-3 and ndnSIM
     cd ns-3
@@ -45,12 +37,14 @@ All steps detailed below are for setup with macOS
     # sudo ldconfig -a
 
     cd ..
-    git clone https://github.com/ChrisLynch96/popular-information-dissemination-in-NDN simulations
-    cd simulations
+    git clone https://github.com/ChrisLynch96/transient-periodic-information-dissemination-in-VNDN.git
+    cd transient-periodic-information-dissemination-in-VNDN
 
     ./waf configure
-    ./waf --run <scenario-to-be-configured>
+    ./waf --run <scenario>
 ```
+
+Generally followed steps detailed [here](https://ndnsim.net/current/getting-started.html) to get set up correctly. 
 
 For more information how to install NS-3 and ndnSIM, please refer to http://ndnsim.net website.
 
@@ -131,6 +125,7 @@ Simuation
 - Attributes
     - traceFile: relative path to trace file which will be used in the simulation.
     - disseminationMethod: The dissemination method to be used in the simulation. Used for placing resultant data in the correct directory.
-    - range: The range of communication for nodes in the network. Can be either 100, 200 or 300 metres.
+    - range: The range of communication for nodes in the network.
 - Resultant data will be output into ```graphs/data/<data_dissemination_method_here>/``` folder.
 - NB: The NFD submodule needs to be altered to use the the correct ```UnsolicitedDataPolicy``` derivative. For *Unsolicited data* and *pure NDN* use ```DropAllUnsolicitedDataPolicy```. For the `proactive pushing` use either ```AdmitAllUnsolicitedDataPolicy``` or ```AdmitNetworkUnsolicitedDataPolicy```.
+- example: ```./waf --run "glosa-with-freshness --traceFile=scenarios/trace-files/academic-paper/111n-285v-100kmh.tcl --disseminationMethod=pure-ndn_1s --range=300"```
