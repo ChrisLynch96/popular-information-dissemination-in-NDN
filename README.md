@@ -115,7 +115,7 @@ or
 
     PKG_LIBRARY_PATH=/usr/local/lib NS_VIS_ASSIGN=1 ./waf --run <scenario_name> --vis
 
-Simuation
+Simulations
 =====================
 
 ### glosa-with-freshness
