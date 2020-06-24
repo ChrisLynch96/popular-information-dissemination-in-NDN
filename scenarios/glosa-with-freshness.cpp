@@ -82,32 +82,33 @@ main(int argc, char* argv[])
   producerNodes.Create(1);
 
   if (range == "200") {
-    std::cout << range << "\n";
     range_d = 2.72;
   } else if (range == "300") {
-    std::cout << range << "\n";
     range_d = 2.55;
-  }else {
-    std::cout << range << "\n";
+  } else if (range == "400") {
+    range_d = 2.43;
+  } else if (range == "500") {
+    range_d = 2.34;
+  } else if (range == "600") {
+    range_d = 2.27;
+  } else if (range == "700") {
+    range_d = 2.22;
+  } else if (range == "800") {
+    range_d = 2.18;
+  } else if (range == "900") {
+    range_d = 2.14; 
+  } else if (range == "1000") {
+    range_d = 2.1;
   }
 
-  //Mobility must be installed before wifi NICs
+  std::cout << range << "m\n";
 
   // Mobility for vehicles comes from traceFile
   ns2Mobility.Install();
 
-  // testing configuration
-  // MobilityHelper testMobility;
-  // Ptr<ListPositionAllocator> testAlloc = CreateObject<ListPositionAllocator> ();
-  // testAlloc->Add(Vector (500.0, 415.0, 0.0));
-  // testMobility.SetPositionAllocator (testAlloc);
-  // testMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  // testMobility.Install(consumerNodes);
-
-  // Mobility for traffic light is a fixed position ~intersection of nodes
   MobilityHelper trafficLightMobility;
   Ptr<ListPositionAllocator> posAlloc = CreateObject<ListPositionAllocator> ();
-  posAlloc->Add(Vector (500.0, 405.0, 0.0));
+  posAlloc->Add(Vector (2010.0, 2010.0, 0.0));
   trafficLightMobility.SetPositionAllocator (posAlloc);
   trafficLightMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   trafficLightMobility.Install(producerNodes);
@@ -137,7 +138,6 @@ main(int argc, char* argv[])
   ndnHelper.InstallAll();
 
   // Installing applications
-  // Consumer
   ndn::AppHelper consumerHelper("RepeatingConsumer");
   consumerHelper.SetPrefix("/cam");
   consumerHelper.SetAttribute("Frequency", DoubleValue(frequency));
@@ -145,22 +145,22 @@ main(int argc, char* argv[])
 
   // ** normal producer **
 
-  // ndn::AppHelper producerHelper("ns3::ndn::Producer");
-  // producerHelper.SetAttribute("PayloadSize", StringValue("600"));
-  // producerHelper.SetAttribute("Freshness", TimeValue(MilliSeconds(freshness)));
-  // producerHelper.SetPrefix("/cam");
-  // producerHelper.Install(producerNodes);
-
-  // ** proactive producer **
-
-  ndn::AppHelper producerHelper("ns3::ndn::ProactiveProducer");
+  ndn::AppHelper producerHelper("ns3::ndn::Producer");
   producerHelper.SetAttribute("PayloadSize", StringValue("600"));
   producerHelper.SetAttribute("Freshness", TimeValue(MilliSeconds(freshness)));
-  producerHelper.SetAttribute("Frequency", DoubleValue(frequency));
   producerHelper.SetPrefix("/cam");
   producerHelper.Install(producerNodes);
 
-  Simulator::Stop(Seconds(100.0));
+  // ** proactive producer **
+
+  // ndn::AppHelper producerHelper("ns3::ndn::ProactiveProducer");
+  // producerHelper.SetAttribute("PayloadSize", StringValue("600"));
+  // producerHelper.SetAttribute("Freshness", TimeValue(MilliSeconds(freshness)));
+  // producerHelper.SetAttribute("Frequency", DoubleValue(frequency));
+  // producerHelper.SetPrefix("/cam");
+  // producerHelper.Install(producerNodes);
+
+  Simulator::Stop(Seconds(300.0));
 
   std::ostringstream osss;
   osss << dir << "rate-trace.txt";
