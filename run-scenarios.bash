@@ -4,16 +4,16 @@ traceFiles=("111n-285v-30kmh" "111n-285v-60kmh" "111n-285v-100kmh" "371n-950v-30
 disseminationMethods=("misc" "pure-ndn_1s" "pure-ndn_100ms" "unsolicited_1s" "unsolicited_100ms" "proactive_1s" "proactive_100ms" "proactive_and_unsolicited_1s" "proactive_and_unsolicited_100ms")
 
 function contains() {
-    local n=$#
-    local value=${!n}
-    for ((i=1;i < $#;i++)) {
-        if [ "${!i}" == "${value}" ]; then
-            echo "y"
-            return 0
-        fi
-    }
-    echo "n"
-    return 1
+  local n=$#
+  local value=${!n}
+  for ((i=1;i < $#;i++)) {
+    if [ "${!i}" == "${value}" ]; then
+      echo "y"
+      return 0
+    fi
+  }
+  echo "n"
+  return 1
 }
 
 if [ $# -eq 1 ]; then
