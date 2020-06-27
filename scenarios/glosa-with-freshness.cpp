@@ -1,7 +1,9 @@
 #include <iostream>
 #include <stdio.h>
 #include <sstream>
+#include <vector>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -75,6 +77,22 @@ main(int argc, char* argv[])
     // dir = "./graphs/data/"; awful code
   }
 
+  // setting frequency based on dissemination method input
+  std::vector<std::string> results;
+
+  boost::split(results, disseminationMethod, [](char c){return c == '_';});
+  std::string updateFrequency = results.back();
+
+  if(updateFrequency.compare("1s") == 0) {
+    frequency = 1;
+  } else if (updateFrequency.compare("100ms") == 0) {
+    frequency = .1;
+  } else {
+    throw "Invalid update frequency!";  // will be reported as an uncaught exception
+  }
+
+  std::cout << "update frequency: " << updateFrequency << " frequency: " << frequency << "\n";
+
   // Creating nodes
   NodeContainer consumerNodes;
   consumerNodes.Create(nodeNum);
@@ -143,22 +161,22 @@ main(int argc, char* argv[])
   consumerHelper.SetAttribute("Frequency", DoubleValue(frequency));
   consumerHelper.Install(consumerNodes);
 
-  // ** normal producer **
-
-  ndn::AppHelper producerHelper("ns3::ndn::Producer");
-  producerHelper.SetAttribute("PayloadSize", StringValue("600"));
-  producerHelper.SetAttribute("Freshness", TimeValue(MilliSeconds(freshness)));
-  producerHelper.SetPrefix("/cam");
-  producerHelper.Install(producerNodes);
-
-  // ** proactive producer **
-
-  // ndn::AppHelper producerHelper("ns3::ndn::ProactiveProducer");
-  // producerHelper.SetAttribute("PayloadSize", StringValue("600"));
-  // producerHelper.SetAttribute("Freshness", TimeValue(MilliSeconds(freshness)));
-  // producerHelper.SetAttribute("Frequency", DoubleValue(frequency));
-  // producerHelper.SetPrefix("/cam");
-  // producerHelper.Install(producerNodes);
+  if (results.front().compare("proactive") == 0) {
+    std::cout << "Proactive producer\n";
+    ndn::AppHelper producerHelper("ns3::ndn::ProactiveProducer");
+    producerHelper.SetAttribute("PayloadSize", StringValue("600"));
+    producerHelper.SetAttribute("Freshness", TimeValue(MilliSeconds(freshness)));
+    producerHelper.SetAttribute("Frequency", DoubleValue(frequency));
+    producerHelper.SetPrefix("/cam");
+    producerHelper.Install(producerNodes);
+  } else {
+    std::cout << "Standard producer\n";
+    ndn::AppHelper producerHelper("ns3::ndn::Producer");
+    producerHelper.SetAttribute("PayloadSize", StringValue("600"));
+    producerHelper.SetAttribute("Freshness", TimeValue(MilliSeconds(freshness)));
+    producerHelper.SetPrefix("/cam");
+    producerHelper.Install(producerNodes);
+  }
 
   Simulator::Stop(Seconds(300.0));
 

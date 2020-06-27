@@ -9,7 +9,7 @@ library(tidytext) # Package for conversion of text to
 
 # functions
 
-grouped_barcharts_packets <- function(all.packets) {
+grouped_barcharts_packets <- function(all.packets, titles_prefix = "Packet numbers ") {
   
   options(scipen=999)
   
@@ -25,7 +25,7 @@ grouped_barcharts_packets <- function(all.packets) {
     geom_bar(position="dodge2", stat="identity") +
     xlab("PCPH") +
     ylab("Packets in the network") +
-    ggtitle("Packet Numbers with respect to vehicle density") +
+    ggtitle(str_c(titles_prefix, "with respect to vehicle density")) +
     theme_light() +
     scale_fill_manual(values=group.colours)
   plot.list[[1]] <- plot
@@ -34,7 +34,7 @@ grouped_barcharts_packets <- function(all.packets) {
     geom_bar(position="dodge2", stat="identity") +
     xlab("Speed km/h") +
     ylab("Packets in the network") +
-    ggtitle("Packet Numbers with respect to vehicle speed") +
+    ggtitle(str_c(titles_prefix, "with respect to vehicle speed")) +
     theme_light() +
     scale_fill_manual(values=group.colours)
   plot.list[[2]] <- plot
@@ -43,7 +43,7 @@ grouped_barcharts_packets <- function(all.packets) {
     geom_bar(position="dodge2", stat="identity") +
     xlab("Transmission Range") +
     ylab("Packets in the network") +
-    ggtitle("Packet Numbers with respect to transmission range") +
+    ggtitle(str_c(titles_prefix, "with respect to transmission range")) +
     theme_light() +
     scale_fill_manual(values=group.colours)
   plot.list[[3]] <- plot
@@ -52,7 +52,7 @@ grouped_barcharts_packets <- function(all.packets) {
     geom_bar(stat="identity") +
     xlab("Method") +
     ylab("Packets in the network") +
-    ggtitle("Packet Numbers for each data dissemination method") +
+    ggtitle(str_c(titles_prefix, "for each data dissemination method")) +
     theme_light() +
     theme(axis.text.x = element_blank()) +
     scale_fill_manual(values=group.colours)
@@ -62,11 +62,11 @@ grouped_barcharts_packets <- function(all.packets) {
 }
 
 ## packets in the network ##
-producer_barcharts_packets <- function(all.packets) {
+producer_barcharts_packets <- function(all.packets, title_prefix = "Packet numbers") {
   
   options(scipen=999)
   
-  all.packets.density <- aggregate(PacketRaw ~ method + density, data=all.packets, FUN=mean)
+  all.packets.density <- aggregate(PacketRaw ~ method + density, data=all.packets, FUN=sum)
 
   plot.list <- list()
   
@@ -74,8 +74,8 @@ producer_barcharts_packets <- function(all.packets) {
   plot <- ggplot(all.packets.density, aes(fill=method, y=PacketRaw, x=density)) + 
     geom_bar(position="dodge2", stat="identity") +
     xlab("PCPH") +
-    ylab("Average packet numbers at producer node") +
-    ggtitle("Average packet numbers at the producer with respect to vehicle density") +
+    ylab("Packet numbers at producer node") +
+    ggtitle(str_c(title_prefix, " at the producer with respect to vehicle density")) +
     theme_light() +
     scale_fill_manual(values=group.colours)
   plot.list[[1]] <- plot
@@ -212,7 +212,7 @@ get_directories <- function() {
 }
 
 combine_and_clean_all_data <- function(directories, traceFile, time, producer = FALSE) {
-  data.list <- lapply(directories, combine_methods_by_directory, traceFile, time)
+  data.list <- lapply(directories, combine_methods_by_directory, traceFile, time, producer)
   data.combined <- bind_rows(data.list)
   data.combined <- coerce_to_factor(data.combined, c("method", "density", "speed", "range"))
   data.combined$density <- convert_vehicles_to_percentages(data.combined$density) # coupled by the calling orded (requires that they be a factor first)
@@ -222,7 +222,7 @@ combine_and_clean_all_data <- function(directories, traceFile, time, producer = 
 }
 
 combine_methods_by_directory <- function(dir, traceFile, time, producer = FALSE) {
-  methods.list <- lapply(disseminationMethods, read_and_append_method, dir, traceFile, time)
+  methods.list <- lapply(disseminationMethods, read_and_append_method, dir, traceFile, time, producer)
   data.combined <- bind_rows(methods.list)
   components <- str_split(dir, "-")[[1]]
   density <- components[2]
@@ -276,11 +276,17 @@ clean_rate_frame <- function(data.packets) {
   data.packets$Node = factor(data.packets$Node)
   data.packets$FaceDescr = factor(data.packets$FaceDescr)
   data.packets$Type = factor(data.packets$Type)
-  #data.packets <- data.packets[!data.packets$FaceDescr == "all",]
+  data.packets <- data.packets[!data.packets$FaceDescr == "all",]
   data.packets <- data.packets[!data.packets$FaceDescr == "internal://",]
   data.packets <- data.packets[!data.packets$FaceDescr == "appFace://",]
   data.packets <- data.packets[!data.packets$Type == "InNacks",]
-  data.packets <- data.packets[!data.packets$Type == "OutNacks",]
+  data.packets <- data.packets[!data.packets$Type == "InInterests",]
+  data.packets <- data.packets[!data.packets$Type == "InData",]
+  data.packets <- data.packets[!data.packets$Type == "InNacks",]
+  data.packets <- data.packets[!data.packets$Type == "InSatisfiedInterests",]
+  data.packets <- data.packets[!data.packets$Type == "InTimedOutInterests",]
+  data.packets <- data.packets[!data.packets$Type == "OutSatisfiedInterests",]
+  data.packets <- data.packets[!data.packets$Type == "OutTimedOutInterests",]
 }
 
 filter_data_packets <- function(data.frame) {
@@ -290,9 +296,7 @@ filter_data_packets <- function(data.frame) {
     data.frame$Type == "InInterests" |
     data.frame$Type == "OutTimedOutInterests" |
     data.frame$Type == "OutInterests" |
-    data.frame$Type == "SatisfiedInterests" |
-    data.frame$Type == "InSatisfiedInterests" |
-    data.frame$Type == "TimedOutInterests"
+    data.frame$Type == "InSatisfiedInterests"
   ),])
 }
 
@@ -389,18 +393,35 @@ generate_packets_delay_cache_pdf <- function(packet.frame, delay.frame, cache.fr
   dev.off()
 }
 
-pdf("interest-satisfactino-ratio.pdf")
-ggplot(test, aes(fill=method, x=method, y=ratio*100)) + 
-  geom_bar(stat="identity") +
-  xlab("Method") +
-  ylab("Interests satisfaction percentage (%)") +
-  ggtitle("Percentage of all satisfied interests to interests in the network") +
-  theme_light() +
-  theme(axis.text.x = element_blank()) +
-  scale_fill_manual(values=group.colours)
-dev.off()
-
-ratio <- interests_agg[,3]/interests_agg[,2]
+plot_interest_satisfaction <- function(all.packets) {
+  # need data frame of satisfied interests
+  satisfied_interests_frame <- get_dataframe_subset_by_column_value(all.packets, all.packets$Type, c("SatisfiedInterests"))
+  satisfied_interests <- aggregate(PacketRaw ~ method, data=satisified_interests_frame, FUN=sum)
+  colnames(satisfied_interests)[2] <- "satisfied_interests_count"
+  
+  # need data frame of all interests in network
+  interests_frame <- get_dataframe_subset_by_column_value(all.packets, all.packets$Type, c("InInterests", "OutInterests", "InSatisfiedInterests", "InTimedOutInterests", "OutSatisfiedInterests"))
+  interests <- aggregate(PacketRaw ~ method, data=interests_frame, FUN=sum)
+  colnames(interests)[2] <- "interests_count"
+  
+  interests <- cbind(interests, satisfied_interests$satisfied_interests_count)
+  
+  # calulate ratio
+  interests$ratio <- interests[,3]/interests[,2]
+  
+  #Plot ratio
+  pdf("interest-satisfaction-percentage.pdf")
+  ggplot(interests, aes(fill=method, x=method, y=ratio*100)) + 
+    geom_bar(stat="identity") +
+    xlab("Method") +
+    ylab("Interests satisfaction percentage (%)") +
+    ylim(0, 100) +
+    ggtitle("Percentage of interests that were satisfied during simulations") +
+    theme_light() +
+    theme(axis.text.x = element_blank()) +
+    scale_fill_manual(values=group.colours)
+  dev.off()
+}
 
 ## MAIN: playground to generate various pdfs ##
 
@@ -431,7 +452,7 @@ producerinterests.packets <- filter_data_packets(producer.packets)
 #################################
 # Producer packets bar charts   #
 #################################
-pdf("average-packets-at-producer.pdf")
+pdf("packets-at-producer.pdf")
 ## Packet Number bar charts
 plot.list <- producer_barcharts_packets(producer.packets)
 
@@ -442,7 +463,7 @@ for(i in 1:length(plot.list)) {
 dev.off()
 
 pdf("in-interests-at-producer.pdf")
-plot.list <- producer_barcharts_packets(producerInInterests.packets)
+plot.list <- producer_barcharts_packets(producerInInterests.packets, "In interests")
 
 for(i in 1:length(plot.list)) {
   print(plot.list[[i]])
@@ -458,7 +479,7 @@ interest.packets <- filter_data_packets(all.packets)
 #################################
 pdf("Interest-packets-in-network.pdf")
 ## Packet Number bar charts
-plot.list <- grouped_barcharts_packets(interest.packets)
+plot.list <- grouped_barcharts_packets(interest.packets, "Interests packets ")
 
 for(i in 1:length(plot.list)) {
   print(plot.list[[i]])
