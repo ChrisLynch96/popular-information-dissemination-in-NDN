@@ -1,8 +1,5 @@
 Prerequisites
 =============
-
-The code should also work with the latest version of ndnSIM, but it is not guaranteed.
-
 The visualiser is extremely unstable. Here are some issues I faced with possible solutions if encountered:
 
 - Try using `from __future__ import print_function` where you get compilation issues due to the incorrect print function being used.
@@ -124,8 +121,10 @@ Simulations
 - Requirements to run: Trace files defining the path taken by nodes in the network. Found [here](./scenarios/trace-files)
 - Attributes
     - traceFile: relative path to trace file which will be used in the simulation.
-    - disseminationMethod: The dissemination method to be used in the simulation. Used for placing resultant data in the correct directory.
+    - disseminationMethod: The dissemination method to be used in the simulation. Used for placing resultant data in the correct directory and choosing update frequency.
     - range: The range of communication for nodes in the network.
 - Resultant data will be output into ```graphs/data/<data_dissemination_method_here>/``` folder.
 - NB: The NFD submodule needs to be altered to use the the correct ```UnsolicitedDataPolicy``` derivative. For *Unsolicited data* and *pure NDN* use ```DropAllUnsolicitedDataPolicy```. For the `proactive pushing` use either ```AdmitAllUnsolicitedDataPolicy``` or ```AdmitNetworkUnsolicitedDataPolicy```.
 - example: ```./waf --run "glosa-with-freshness --traceFile=scenarios/trace-files/academic-paper/111n-285v-100kmh.tcl --disseminationMethod=pure-ndn_1s --range=300"```
+- To run batches of simulations at once make use of the *run-scenarios.bash* script. It takes as input a valid dissemination method and runs all possible cominations of vehicle density, vehicle speed and transmission range for the procided dissemination method.
+- Valid dissemination methods: "pure-ndn_1s" "pure-ndn_100ms" "unsolicited_1s" "unsolicited_100ms" "proactive_1s" "proactive_100ms" "proactive_and_unsolicited_1s" "proactive_and_unsolicited_100ms" "misc"
